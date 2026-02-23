@@ -19,7 +19,9 @@ const mongoose = require('mongoose')
         profileImage:{
             type:String,
             default:"https://ik.imagekit.io/lg0khbxcq/default.avif?updatedAt=1771483603375"
-        }
+        },
+
+        
     })
 
     const userModel = mongoose.model('users', userSchema)
