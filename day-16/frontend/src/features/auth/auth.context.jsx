@@ -24,10 +24,11 @@ export function AuthProvider({ children }) {
     setLoading(true);
 
     try {
-      const register = await register(username, email, password);
+      const response = await register(username, email, password);
       setUser(response.user);
     } catch (err) {
       console.log(err);
+      throw err;
     } finally {
       setLoading(false);
     }
