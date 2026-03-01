@@ -15,7 +15,7 @@ const postSchema = new mongoose.Schema({
         ref:'users',
         required:[true, "userId is required to crerate a post"]
     }
-})
+},)
 
 
 const postModel = mongoose.model('posts', postSchema)

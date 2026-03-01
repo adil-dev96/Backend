@@ -1,8 +1,11 @@
 .feed-page {
   display: flex;
  justify-content: center;
- align-items: flex-start;
+ align-items: center;
   width: 100%;
+  flex-direction: column;
+  overflow: hidden;
+ 
 
   .feed {
     max-width: 300px;
