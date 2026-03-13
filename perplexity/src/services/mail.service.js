@@ -1,0 +1,37 @@
+import nodemailer from "nodemailer";
+
+const transporter = nodemailer.createTransport({
+  service: "gmail",
+  auth: {
+    type: "OAuth2",
+    user: process.env.GOOGLE_USER,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    refreshToken: process.env.GOOGLE_REFRESH_TOKEN,
+    clientId: process.env.GOOGLE_CLIENT_ID,
+  },
+});
+
+console.log(process.env.GOOGLE_USER);
+  
+transporter
+  .verify()
+  .then(() => {
+    console.log("email transporter is ready to send emails");
+  })
+
+  .catch((err) => {
+    console.error("email transpoter varification failed", err);
+  });
+
+export async function sendEmails({ to, subject, html, text }) {
+  const mailOptions = {
+    from: process.env.GOOGLE_USER,
+    to,
+    subject,
+    html,
+    text,
+  };
+
+  const details = await transporter.sendMail(mailOptions);
+  console.log("email sent", details);
+}
