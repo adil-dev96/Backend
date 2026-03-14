@@ -15,11 +15,11 @@ export const registerValidator = [
   body("username")
     .trim()
     .notEmpty()
-    .withMessage("username is requrired")
+    .withMessage("username is required")
     .isLength({ min: 3, max: 30 })
-    .withMessage("username must be betwee 3 to 30 characters")
+    .withMessage("username must be between 3 to 30 characters")
     .matches(/^[a-zA-Z0-9_]+$/)
-    .withMessage("usernames can only conatains letters,numbers and underscore"),
+    .withMessage("usernames can only contains letters,numbers and underscore"),
 
   body("email")
     .trim()
@@ -33,6 +33,19 @@ export const registerValidator = [
     .withMessage("password is required")
     .isLength({ min: 6 })
     .withMessage("password must be atleast 6 characters"),
+
+  validate,
+];
+
+export const loginValidator = [
+  body("email")
+    .trim()
+    .notEmpty()
+    .withMessage("Email is required")
+    .isEmail()
+    .withMessage("Please Provide a valid email"),
+
+  body("password").notEmpty().withMessage("password is required"),
 
   validate,
 ];
