@@ -8,7 +8,10 @@ const model = new ChatMistralAI({
 });
 
 export async function testAi() {
-  await model.invoke("what is the capital of india").then((response) => {
-    console.log(response.text);
-  });
+  try {
+    const response = await model.invoke("what is the capital of India");
+    console.log(response.content);
+  } catch (error) {
+    console.error("Ai Error:", error.message);
+  }
 }
