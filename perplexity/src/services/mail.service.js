@@ -11,7 +11,7 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-console.log(process.env.GOOGLE_USER);
+
   
 transporter
   .verify()
