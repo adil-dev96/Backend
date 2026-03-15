@@ -1,5 +1,5 @@
 import "dotenv/config";
-import readline from "readline";
+import readline from "readline/promises";
 import { ChatMistralAI } from "@langchain/mistralai";
 
 const rl = readline.createInterface({
@@ -7,12 +7,14 @@ const rl = readline.createInterface({
   output: process.stdout,
 });
 
-const model = new ChatMistralAI({
-  model: "mistral-small-latest",
-  temperature: 0,
-});
+//infinite while loop just to make endless Ai Chat but the problem here is it cant remember the history of chats 
 
-const response = await model.invoke('what is the capital of india?')
 
-console.log(response.text)
+while(true){
+  const userInput = await rl.question("you:")
+  const response = await model.invoke(userInput)
+  console.log(response.text);
+  
+}
+
 rl.close()
