@@ -1,19 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { TEMPLATES, generateComparison } from './mockGenerator';
+
 import { Markdown } from './markdown';
+import axios from 'axios'
 
 function App() {
-  const [history, setHistory] = useState(() => {
-    // Seed with the predefined high-fidelity templates
-    return TEMPLATES.map((item, idx) => ({
-      ...item,
-      id: item.id || `seed-${idx}`,
-      timestamp: new Date(Date.now() - (idx * 3600 * 1000)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      isPending: false,
-    }));
-  });
+  const [history, setHistory] = useState([]);
 
-  const [selectedId, setSelectedId] = useState(history[0]?.id || null);
+  const [selectedId, setSelectedId] = useState(null);
   const [inputText, setInputText] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [judgeMode, setJudgeMode] = useState('analytical'); // analytical, strict, creative
@@ -35,8 +28,11 @@ function App() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const query = inputText.trim();
     if (!query || isGenerating) return;
+
+
 
     setIsGenerating(true);
     setInputText('');
@@ -60,19 +56,26 @@ function App() {
     setSelectedId(newId);
 
     try {
-      const response = await generateComparison(query);
-      
+      const { data } = await axios.post("http://localhost:3000/invoke",
+        {
+          input: query,
+        });
+
+      const response = data.result;
+
+
+
       // Update history with finalized output
-      setHistory(prev => 
-        prev.map(item => 
-          item.id === newId 
-            ? { 
-                ...item, 
-                solution_1: response.solution_1, 
-                solution_2: response.solution_2, 
-                judge: response.judge,
-                isPending: false 
-              } 
+      setHistory(prev =>
+        prev.map(item =>
+          item.id === newId
+            ? {
+              ...item,
+              solution_1: response.solution_1,
+              solution_2: response.solution_2,
+              judge: response.judge,
+              isPending: false
+            }
             : item
         )
       );
@@ -100,28 +103,14 @@ function App() {
     }
   };
 
-  const loadTemplate = (template) => {
-    if (isGenerating) return;
-    const existing = history.find(item => item.id === template.id);
-    if (existing) {
-      setSelectedId(template.id);
-    } else {
-      const copy = {
-        ...template,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isPending: false
-      };
-      setHistory(prev => [copy, ...prev]);
-      setSelectedId(template.id);
-    }
-  };
+
 
   return (
     <div className="h-full flex bg-surface text-on-surface font-sans antialiased overflow-hidden">
-      
+
       {/* 1. Sidebar Panel (Geist typography, 1px borders) */}
       <nav className="bg-surface-container-low border-r border-outline-variant h-screen w-64 hidden md:flex flex-col z-40 p-5 select-none shrink-0">
-        
+
         {/* Sidebar Header */}
         <div className="mb-8 flex items-center gap-3">
           <div className="w-9 h-9 rounded bg-primary flex items-center justify-center text-on-primary">
@@ -145,9 +134,8 @@ function App() {
             if (isGenerating) return;
             setSelectedId(null);
           }}
-          className={`mb-6 border border-outline-variant hover:bg-surface-container text-primary font-medium rounded-md flex items-center justify-center gap-2 p-2.5 transition-all text-xs cursor-pointer ${
-            !selectedId ? 'bg-surface-container border-primary/20' : 'bg-surface-container-lowest'
-          }`}
+          className={`mb-6 border border-outline-variant hover:bg-surface-container text-primary font-medium rounded-md flex items-center justify-center gap-2 p-2.5 transition-all text-xs cursor-pointer ${!selectedId ? 'bg-surface-container border-primary/20' : 'bg-surface-container-lowest'
+            }`}
         >
           <span className="material-symbols-outlined text-[16px]">add</span>
           New Comparison Workspace
@@ -156,7 +144,7 @@ function App() {
         {/* Sidebar Navigation & History */}
         <div className="flex-grow flex flex-col min-h-0 overflow-y-auto pr-1">
           <div className="text-[11px] uppercase font-bold text-on-surface-variant/50 tracking-wider mb-2">
-            History & Templates
+            History
           </div>
           <ul className="flex flex-col gap-1.5">
             {history.map((item) => {
@@ -168,11 +156,10 @@ function App() {
                       if (isGenerating) return;
                       setSelectedId(item.id);
                     }}
-                    className={`w-full text-left font-sans text-xs rounded-md flex items-center gap-2.5 p-3 transition-all cursor-pointer scale-98 hover:scale-100 ${
-                      isActive
-                        ? 'bg-primary text-on-primary font-medium shadow-sm'
-                        : 'text-on-surface-variant hover:bg-surface-container-high'
-                    }`}
+                    className={`w-full text-left font-sans text-xs rounded-md flex items-center gap-2.5 p-3 transition-all cursor-pointer scale-98 hover:scale-100 ${isActive
+                      ? 'bg-primary text-on-primary font-medium shadow-sm'
+                      : 'text-on-surface-variant hover:bg-surface-container-high'
+                      }`}
                   >
                     <span className="material-symbols-outlined text-[16px]">
                       {item.icon || 'chat'}
@@ -189,41 +176,21 @@ function App() {
             })}
           </ul>
 
-          {/* Quick Sandbox Templates */}
-          {TEMPLATES.length > 0 && (
-            <div className="mt-8">
-              <div className="text-[11px] uppercase font-bold text-on-surface-variant/50 tracking-wider mb-2">
-                Benchmarks
-              </div>
-              <div className="flex flex-col gap-1.5">
-                {TEMPLATES.map((tpl) => (
-                  <button
-                    key={tpl.id}
-                    onClick={() => loadTemplate(tpl)}
-                    className="w-full text-left font-sans text-xs p-2.5 border border-outline-variant hover:border-primary/20 bg-surface-container-lowest rounded-md text-on-surface hover:bg-surface-container transition-all flex items-center gap-2 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px] text-secondary">
-                      {tpl.icon}
-                    </span>
-                    <span className="truncate">{tpl.title}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
 
-        {/* Sidebar Footer */}
-        <div className="mt-auto pt-4 border-t border-outline-variant/60 flex flex-col gap-2">
-          <div className="text-[10px] text-on-surface-variant/40 text-center font-mono">
-            Vite + React • Tailwind v4
+
+          {/* Sidebar Footer */}
+          <div className="mt-auto pt-4 border-t border-outline-variant/60 flex flex-col gap-2">
+            <div className="text-[10px] text-on-surface-variant/40 text-center font-mono">
+              Vite + React • Tailwind v4
+            </div>
           </div>
+
         </div>
       </nav>
 
       {/* 2. Main View Workspace */}
       <main className="flex-grow flex flex-col relative h-screen bg-surface overflow-hidden">
-        
+
         {/* Workspace Top Header Bar */}
         <header className="bg-surface border-b border-outline-variant/60 sticky top-0 left-0 w-full z-10 flex justify-between items-center px-8 h-14 shrink-0">
           <div className="flex items-center gap-3">
@@ -250,7 +217,7 @@ function App() {
                 <option value="creative">Creative Feedback</option>
               </select>
             </div>
-            
+
             <div className="flex items-center gap-2">
               <span className="text-on-surface-variant/70">Temp:</span>
               <input
@@ -268,12 +235,12 @@ function App() {
         </header>
 
         {/* Scrollable Comparison Board */}
-        <div 
-          ref={mainContentRef} 
+        <div
+          ref={mainContentRef}
           className="flex-grow overflow-y-auto px-8 md:px-16 py-10"
         >
           <div className="max-w-[960px] mx-auto w-full">
-            
+
             {/* Conditional Render: Empty State / Onboarding */}
             {!selectedId ? (
               <div className="py-16 text-center max-w-xl mx-auto animate-fade-in">
@@ -284,37 +251,16 @@ function App() {
                   Welcome to AI Solution Arena
                 </h2>
                 <p className="text-sm text-on-surface-variant leading-relaxed mb-8">
-                  Submit any technical problem, mathematical query, or operational scenario. 
-                  Our environment generates two separate candidates side by side and passes them to a 
+                  Submit any technical problem, mathematical query, or operational scenario.
+                  Our environment generates two separate candidates side by side and passes them to a
                   Judge LLM for a structured comparison review and quantitative scores.
                 </p>
 
-                {/* Grid of Templates */}
-                <div className="grid grid-cols-1 gap-3.5 text-left">
-                  {TEMPLATES.map((tpl) => (
-                    <button
-                      key={tpl.id}
-                      onClick={() => loadTemplate(tpl)}
-                      className="p-4 border border-outline-variant bg-surface-container-lowest hover:bg-surface-container-low hover:border-primary/20 rounded-lg transition-all flex items-start gap-3.5 cursor-pointer text-left shadow-xs hover:shadow-sm"
-                    >
-                      <div className="p-1.5 bg-primary/5 rounded text-primary">
-                        <span className="material-symbols-outlined text-[18px]">
-                          {tpl.icon}
-                        </span>
-                      </div>
-                      <div>
-                        <h4 className="text-xs font-bold text-primary mb-0.5">{tpl.title}</h4>
-                        <p className="text-[11px] text-on-surface-variant line-clamp-1">
-                          {tpl.problem}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
+
               </div>
             ) : (
               <div className="space-y-12 animate-slide-up">
-                
+
                 {/* 1. Problem Statement Section */}
                 <section>
                   <div className="flex items-center gap-2 mb-3 text-on-surface-variant/80 select-none">
@@ -354,7 +300,7 @@ function App() {
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 my-8">
-                    
+
                     {/* Solution Column 1 */}
                     <div className="flex flex-col">
                       <div className="flex items-center justify-between mb-3.5 pb-2 border-b border-outline-variant/60 select-none">
@@ -416,15 +362,15 @@ function App() {
                     <div className="bg-surface-container-lowest border border-outline-variant rounded-lg overflow-hidden relative shadow-sm">
                       {/* Decorative Top Accent Border */}
                       <div className="h-[3px] w-full bg-primary"></div>
-                      
+
                       <div className="p-6 md:p-8 flex flex-col lg:flex-row gap-8 items-stretch">
-                        
+
                         {/* Winner Score Ring Display */}
                         <div className="flex-shrink-0 flex flex-col items-center justify-center bg-surface-container-low/50 border border-outline-variant/60 p-6 rounded-lg lg:w-[220px] select-none text-center">
                           <span className="text-[10px] font-bold text-on-surface-variant/70 uppercase tracking-widest mb-1.5">
                             Recommended Winner
                           </span>
-                          
+
                           <div className="flex items-center gap-1.5 mb-2">
                             <span className="material-symbols-outlined text-primary text-[18px]">
                               emoji_events
@@ -455,7 +401,7 @@ function App() {
                                 Judge Audit & Reasoning
                               </h5>
                             </div>
-                            
+
                             {/* Summary Sentence */}
                             <p className="text-[13px] font-semibold text-primary mb-5 italic border-l-2 border-primary/50 pl-3">
                               "{activeItem.judge.summary || `${activeItem.judge.winner} is recommended based on technical compliance.`}"
@@ -497,14 +443,18 @@ function App() {
                               <span className="material-symbols-outlined text-[14px]">done</span>
                               Accept Verdict
                             </button>
-                            
+
                             <button
                               onClick={async () => {
                                 // Simulate regeneration
                                 if (isGenerating) return;
                                 setIsGenerating(true);
                                 try {
-                                  const response = await generateComparison(activeItem.problem);
+                                  const { data } = await axios.post("http://localhost:3000/invoke", {
+                                    input: activeItem.problem,
+                                  });
+
+                                  const response = data.result;
                                   setHistory(prev =>
                                     prev.map(item =>
                                       item.id === activeItem.id
@@ -539,7 +489,7 @@ function App() {
         <footer className="px-8 md:px-16 pb-8 pt-4 shrink-0 bg-gradient-to-t from-surface via-surface to-transparent select-none z-10">
           <div className="max-w-[960px] mx-auto">
             <form onSubmit={handleSubmit} className="relative bg-surface-container-lowest border border-outline-variant rounded-lg p-2.5 shadow-xs focus-within:border-primary/40 focus-within:shadow-md transition-all">
-              
+
               <textarea
                 ref={textareaRef}
                 value={inputText}
@@ -560,18 +510,17 @@ function App() {
                   <button
                     type="submit"
                     disabled={!inputText.trim()}
-                    className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${
-                      inputText.trim() 
-                        ? 'bg-primary text-on-primary hover:opacity-90 cursor-pointer' 
-                        : 'bg-surface-container text-on-surface-variant/30 cursor-not-allowed'
-                    }`}
+                    className={`w-8 h-8 rounded-md flex items-center justify-center transition-all ${inputText.trim()
+                      ? 'bg-primary text-on-primary hover:opacity-90 cursor-pointer'
+                      : 'bg-surface-container text-on-surface-variant/30 cursor-not-allowed'
+                      }`}
                   >
                     <span className="material-symbols-outlined text-[18px]">arrow_upward</span>
                   </button>
                 )}
               </div>
             </form>
-            
+
             <div className="text-[10px] text-on-surface-variant/50 text-center mt-2.5">
               Press Enter to Submit • Shift+Enter for Newline • Judgments are compiled using {judgeMode} parameters.
             </div>
