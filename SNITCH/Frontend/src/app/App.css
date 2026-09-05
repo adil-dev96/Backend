@@ -1,1 +1,16 @@
 @import "tailwindcss";
+
+/* ── Override browser autofill background (Chrome/Edge/Safari) ── */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  /* Inset shadow paints over the white autofill bg */
+  -webkit-box-shadow: 0 0 0px 1000px #0D0D0D inset !important;
+  box-shadow:         0 0 0px 1000px #0D0D0D inset !important;
+  /* Keep text color light */
+  -webkit-text-fill-color: #eae1d4 !important;
+  /* Delay the transition so the override holds */
+  transition: background-color 9999s ease-in-out 0s;
+  caret-color: #eae1d4;
+}
