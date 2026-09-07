@@ -352,6 +352,8 @@ export default function Register() {
                                 Sign In
                             </Link>
                         </p>
+
+                        <a href="/api/auth/google" style={{ color: "#d4af37" }}>continue with google</a>
                     </div>
                 </div>
             </div>
