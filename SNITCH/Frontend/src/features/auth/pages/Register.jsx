@@ -320,6 +320,12 @@ export default function Register() {
                             Create Account
                         </button>
 
+                        <div style={{ display: 'flex', alignItems: 'center', margin: '24px 0' }}>
+                            <div style={{ flex: 1, height: '1px', background: '#38342b' }} />
+                            <span style={{ padding: '0 12px', fontSize: '10px', fontWeight: 600, letterSpacing: '0.12em', color: '#99907c', textTransform: 'uppercase' }}>Or</span>
+                            <div style={{ flex: 1, height: '1px', background: '#38342b' }} />
+                        </div>
+
                         <ContinueWithGoogle/>
 
                         

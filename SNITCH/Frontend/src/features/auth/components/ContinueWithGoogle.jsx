@@ -9,17 +9,17 @@ const ContinueWithGoogle = () => {
                 flex w-full h-11
                 items-center justify-center gap-3
                 rounded-[4px]
-                border border-[#747775]
-                bg-white
+                border border-[#8e918f]
+                bg-[#131314]
                 px-5
                 font-['Roboto',Arial,sans-serif]
                 text-sm font-medium
-                text-[#1f1f1f]
+                text-[#e3e3e3]
                 no-underline
                 transition
-                hover:bg-[#f8fafd]
-                hover:shadow-[0_1px_2px_rgba(60,64,67,0.15)]
-                active:bg-[#f1f3f4]
+                hover:bg-[#282929]
+                hover:shadow-[0_1px_2px_rgba(0,0,0,0.15)]
+                active:bg-[#3b3b3b]
             "
         >
             {/* Google G logo */}
