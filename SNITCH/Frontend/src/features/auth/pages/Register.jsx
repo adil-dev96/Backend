@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router";
 import { useAuth } from "../hook/useAuth";
 import { useNavigate } from "react-router";
+import ContinueWithGoogle from "../components/ContinueWithGoogle";
+
 
 
 
@@ -317,6 +319,10 @@ export default function Register() {
                         >
                             Create Account
                         </button>
+
+                        <ContinueWithGoogle/>
+
+                        
                     </form>
 
                     {/* Footer link */}
@@ -353,7 +359,7 @@ export default function Register() {
                             </Link>
                         </p>
 
-                        <a href="/api/auth/google" style={{ color: "#d4af37" }}>continue with google</a>
+                       
                     </div>
                 </div>
             </div>
