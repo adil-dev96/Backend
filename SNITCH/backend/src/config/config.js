@@ -16,12 +16,17 @@ if(!process.env.GOOGLE_CLIENT_ID){
 if(!process.env.GOOGLE_CLIENT_SECRET){
     throw new Error ("GOOGLE_CLIENT_SECRET is not defined in environmental variables")
 }
+
+if(!process.env.IMAGEKIT_API_KEY){
+    throw new Error ("IMAGEKIT_API_KEY is not defined in environmental variables")
+}
 export const config ={
     MONGO_URI : process.env.MONGO_URI, 
     JWT_SECRET: process.env.JWT_SECRET,
     GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET,
     GOOGLE_CLIENT_ID: process.env.GOOGLE_CLIENT_ID,
-    NODE_ENV:process.env.NODE_ENV || "development"
+    NODE_ENV:process.env.NODE_ENV || "development",
+    IMAGEKIT_API_KEY: process.env.IMAGEKIT_API_KEY
 }
 
 
