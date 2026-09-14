@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { useProduct } from '../../products/hooks/useProduct'
+import { useProduct } from '../hooks/useProduct'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router'
 
