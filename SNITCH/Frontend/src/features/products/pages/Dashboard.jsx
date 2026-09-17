@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useProduct } from '../hooks/useProduct'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router'
+import { useNavigate } from 'react-router'
 
 /* ─── helpers ─── */
 const fmt = (amount, currency = 'INR') =>
@@ -62,6 +63,7 @@ function ProductCard({ product, index }) {
     const [hovered, setHovered] = useState(false)
     const images = product.images || []
     const hasMultiple = images.length > 1
+    const navigate = useNavigate()
 
     useEffect(() => {
         if (!hovered || !hasMultiple) return
@@ -71,6 +73,7 @@ function ProductCard({ product, index }) {
 
     return (
         <div
+            onClick={()=>{navigate(`/seller/product/${product._id}`)}}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => { setHovered(false); setImgIdx(0) }}
             style={{
