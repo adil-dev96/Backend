@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router'
 import { useProduct } from '../hooks/useProduct'
+import { useNavigate } from 'react-router'
 
 /* ─── Currency Formatter ─── */
 const formatPrice = (amount, currency = 'INR') => {
@@ -37,6 +38,7 @@ function ProductCard({ product, onQuickView }) {
     const [activeImg, setActiveImg] = useState(0)
     const [isHovered, setIsHovered] = useState(false)
     const [added, setAdded] = useState(false)
+    const navigate = useNavigate();
 
     const images = product.images || []
     const hasMultiple = images.length > 1
@@ -58,7 +60,7 @@ function ProductCard({ product, onQuickView }) {
 
     return (
         <div
-            onClick={() => onQuickView(product)}
+            onClick={() => navigate(`/product/${product._id}`)}
             onMouseEnter={() => setIsHovered(true)}
             onMouseLeave={() => {
                 setIsHovered(false)
