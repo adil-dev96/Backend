@@ -2,51 +2,6 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router'
 import { useProduct } from '../hooks/useProduct'
 
-// Fallback product data matching the schema in case API is offline or during preview
-const SAMPLE_PRODUCT = {
-    _id: "6aa6eca297bc764f444c0b82",
-    title: "Linen Tailored Trousers",
-    description: "pants hai linen ke. Tailored to perfection from 100% pure organic European flax linen. Engineered with a contemporary relaxed fit, breathable weave, and signature horn buttons for effortless day-to-evening sophistication.",
-    seller: "6a9bfb674720e23e07bab95b",
-    price: {
-        amount: 1500,
-        currency: "INR"
-    },
-    images: [
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__22__4DaINX8ieg.png",
-            _id: "6aa6eca297bc764f444c0b83"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__21__-_Copy_kHZkm6QQJ_.png",
-            _id: "6aa6eca297bc764f444c0b84"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__23__-_Copy_vslClMRLV.png",
-            _id: "6aa6eca297bc764f444c0b85"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__22__FQw9opfoN.png",
-            _id: "6aa6eca297bc764f444c0b86"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__22__-_Copy_qtcKF6RXz.png",
-            _id: "6aa6eca297bc764f444c0b87"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__22___80qjBzXM.png",
-            _id: "6aa6eca297bc764f444c0b88"
-        },
-        {
-            url: "https://ik.imagekit.io/lg0khbxcq/snitch/Screenshot__21__-_Copy_H42vajUr9q.png",
-            _id: "6aa6eca297bc764f444c0b89"
-        }
-    ],
-    createdAt: "2026-09-13T18:34:10.291Z",
-    updatedAt: "2026-09-13T18:34:10.291Z",
-    __v: 0
-}
-
 const formatPrice = (amount, currency = 'INR') => {
     return new Intl.NumberFormat('en-IN', {
         style: 'currency',
@@ -60,18 +15,26 @@ const ProductDetail = () => {
     const navigate = useNavigate()
     const { handleGetProductById } = useProduct()
 
+    // ── Main State ──
     const [product, setProduct] = useState(null)
     const [loading, setLoading] = useState(true)
 
-    // Interactive states
+    // ── Variant Selection State ──
+    // Stores the _id of the currently active variant, or null if base product is selected
+    const [selectedVariantId, setSelectedVariantId] = useState(null)
+    // Stores specific chosen attribute values (e.g. { color: 'black', size: 'Large' })
+    const [selectedAttributes, setSelectedAttributes] = useState({})
+
+    // ── Gallery & Interactive States ──
     const [activeImageIdx, setActiveImageIdx] = useState(0)
-    const [selectedSize, setSelectedSize] = useState('M')
     const [quantity, setQuantity] = useState(1)
     const [showSizeGuide, setShowSizeGuide] = useState(false)
     const [toastMessage, setToastMessage] = useState(null)
     const [isImageZoomed, setIsImageZoomed] = useState(false)
 
-    const sizes = ['S', 'M', 'L', 'XL', 'XXL']
+    // Standard fallback sizes if no size attribute is present in variants
+    const defaultSizes = ['S', 'M', 'L', 'XL', 'XXL']
+    const [fallbackSize, setFallbackSize] = useState('M')
 
     const showNotification = (msg) => {
         setToastMessage(msg)
@@ -80,22 +43,21 @@ const ProductDetail = () => {
 
     async function fetchProductDetails() {
         setLoading(true)
+
         try {
-            if (productId) {
-                const data = await handleGetProductById(productId)
-                if (data) {
-                    setProduct(data)
-                } else {
-                    // Fallback to sample if ID matches or backend is not responding
-                    setProduct(SAMPLE_PRODUCT)
-                }
-            } else {
-                setProduct(SAMPLE_PRODUCT)
-            }
+            // Fetch the real product from the backend using the URL productId.
+            const data = await handleGetProductById(productId)
+
+            console.log("API Response:", data)
+
+            // If the API does not return a product, keep product as null.
+            // We do not use fake/sample data anymore.
+            setProduct(data || null)
         } catch (err) {
             console.error("Error fetching product details:", err)
-            // If backend request fails (e.g. 404 or backend not running), show sample data for seamless preview
-            setProduct(SAMPLE_PRODUCT)
+
+            // On an API error, show the error state instead of sample data.
+            setProduct(null)
         } finally {
             setLoading(false)
         }
@@ -106,17 +68,231 @@ const ProductDetail = () => {
         window.scrollTo({ top: 0, behavior: 'smooth' })
     }, [productId])
 
-    const images = product?.images || []
-    const currentImage = images[activeImageIdx]?.url || images[0]?.url
+    // ─────────────────────────────────────────────────────────────
+    // VARIANT & ATTRIBUTE SELECTION LOGIC
+    // ─────────────────────────────────────────────────────────────
+    const variants = product?.variants || []
+
+    /**
+     * Collect all unique attribute names across all product variants.
+     * (e.g., ['color', 'size', 'storage'])
+     */
+    const allAttributeNames = React.useMemo(() => {
+        const namesSet = new Set()
+        variants.forEach(variant => {
+            if (variant.attributes && typeof variant.attributes === 'object') {
+                Object.keys(variant.attributes).forEach(key => namesSet.add(key))
+            }
+        })
+        return Array.from(namesSet)
+    }, [variants])
+
+    /**
+     * Map each attribute name to all unique values found across variants.
+     * (e.g., { color: ['brown', 'blue', 'black'], size: ['Large'] })
+     */
+    const attributeOptions = React.useMemo(() => {
+        const optionsMap = {}
+        allAttributeNames.forEach(attrName => {
+            const valuesSet = new Set()
+            variants.forEach(variant => {
+                if (variant.attributes && variant.attributes[attrName]) {
+                    valuesSet.add(variant.attributes[attrName])
+                }
+            })
+            optionsMap[attrName] = Array.from(valuesSet)
+        })
+        return optionsMap
+    }, [variants, allAttributeNames])
+
+    /**
+     * Initialize selected variant or attributes when product data loads.
+     * By default, select the first variant if available.
+     */
+    useEffect(() => {
+        if (variants.length > 0) {
+            // Default to the first variant
+            const firstVariant = variants[0]
+            setSelectedVariantId(firstVariant._id)
+            if (firstVariant.attributes) {
+                setSelectedAttributes({ ...firstVariant.attributes })
+            }
+        } else {
+            setSelectedVariantId(null)
+            setSelectedAttributes({})
+        }
+        // Reset active gallery image to first image on product load
+        setActiveImageIdx(0)
+    }, [product])
+
+    /**
+     * Find the currently active variant object based on selectedVariantId.
+     */
+    const activeVariant = React.useMemo(() => {
+        if (!selectedVariantId) return null
+        return variants.find(v => v._id === selectedVariantId) || null
+    }, [variants, selectedVariantId])
+
+    /**
+     * Handler when user selects a variant directly by clicking its chip or card.
+     */
+    const handleSelectVariantDirectly = (variant) => {
+        setSelectedVariantId(variant._id)
+        if (variant.attributes) {
+            setSelectedAttributes({ ...variant.attributes })
+        }
+        // Reset gallery image to first thumbnail when switching variants
+        setActiveImageIdx(0)
+    }
+
+    /**
+     * Handler when user clicks an individual attribute button (e.g. Color: "blue" or Size: "Large").
+     * Finds the closest matching variant that satisfies the updated attribute selections.
+     */
+    const handleSelectAttributeValue = (attrName, value) => {
+        // Create the new selection after the user clicks an option.
+        const nextAttributes = {
+            ...selectedAttributes,
+            [attrName]: value
+        }
+
+        // First, try to find an exact variant that matches every selected attribute.
+        let matchedVariant = variants.find((variant) => {
+            if (!variant.attributes) return false
+
+            return Object.entries(nextAttributes).every(([key, selectedValue]) => {
+                return variant.attributes[key] === selectedValue
+            })
+        })
+
+        // If an exact combination does not exist, find a compatible variant.
+        // Example: Brown may not have a size attribute, so Brown should still work
+        // even if Large was selected previously for another color.
+        if (!matchedVariant) {
+            matchedVariant = variants.find((variant) => {
+                if (!variant.attributes) return false
+                if (variant.attributes[attrName] !== value) return false
+
+                return Object.entries(nextAttributes).every(([key, selectedValue]) => {
+                    // Ignore attributes that this variant does not contain.
+                    // This allows Brown (without size) to be selected after Black/Large.
+                    if (typeof variant.attributes[key] === 'undefined') return true
+                    return variant.attributes[key] === selectedValue
+                })
+            })
+        }
+
+        if (matchedVariant) {
+            // Use the matched variant's real attributes.
+            // This removes an old incompatible selection such as Large when
+            // the newly selected Brown variant has no size attribute.
+            setSelectedAttributes({ ...matchedVariant.attributes })
+            setSelectedVariantId(matchedVariant._id)
+        } else {
+            // Keep the clicked value visible even if no matching variant is found.
+            setSelectedAttributes(nextAttributes)
+        }
+
+        // Show the selected variant's first image.
+        setActiveImageIdx(0)
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // FALLBACK LOGIC: Use variant values if present, else main product
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * 1. Images: Use variant images if available and non-empty;
+     *    otherwise fall back to main product images.
+     */
+    const effectiveImages = React.useMemo(() => {
+        if (activeVariant?.images && activeVariant.images.length > 0) {
+            return activeVariant.images
+        }
+        return product?.images || []
+    }, [activeVariant, product])
+
+    /**
+     * 2. Price: Use variant price if specified;
+     *    otherwise fall back to main product price.
+     */
+    const effectivePrice = React.useMemo(() => {
+        if (activeVariant?.price?.amount) {
+            return activeVariant.price
+        }
+        return product?.price || { amount: 0, currency: 'INR' }
+    }, [activeVariant, product])
+
+    /**
+     * 3. Stock: Use variant stock if present;
+     *    otherwise fall back to product stock or default to in-stock.
+     */
+    const effectiveStock = React.useMemo(() => {
+        if (activeVariant && typeof activeVariant.stock !== 'undefined') {
+            return activeVariant.stock
+        }
+        return product?.stock ?? 100
+    }, [activeVariant, product])
+
+    const currentImage = effectiveImages[activeImageIdx]?.url || effectiveImages[0]?.url
 
     const handlePrevImage = () => {
-        if (!images.length) return
-        setActiveImageIdx((prev) => (prev === 0 ? images.length - 1 : prev - 1))
+        if (!effectiveImages.length) return
+        setActiveImageIdx((prev) => (prev === 0 ? effectiveImages.length - 1 : prev - 1))
     }
 
     const handleNextImage = () => {
-        if (!images.length) return
-        setActiveImageIdx((prev) => (prev === images.length - 1 ? 0 : prev + 1))
+        if (!effectiveImages.length) return
+        setActiveImageIdx((prev) => (prev === effectiveImages.length - 1 ? 0 : prev + 1))
+    }
+
+    /**
+     * Checks whether an attribute option is available with the other
+     * currently selected attributes.
+     *
+     * Example:
+     * If Brown + L does not exist or has zero stock,
+     * the L button becomes crossed out while Brown is selected.
+     */
+    const isAttributeOptionAvailable = (attrName, optionValue) => {
+        return variants.some((variant) => {
+            if (!variant.attributes) return false
+
+            // The option itself must exist on this variant.
+            if (variant.attributes[attrName] !== optionValue) return false
+
+            // A variant with zero stock should appear unavailable.
+            if (Number(variant.stock ?? 0) <= 0) return false
+
+            // Check the other selected attributes only when this variant
+            // actually has that attribute.
+            // Example: Brown has no size, so Brown remains clickable even
+            // when Large is currently selected for Black.
+            return Object.entries(selectedAttributes).every(([key, value]) => {
+                if (key === attrName) return true
+                if (typeof variant.attributes[key] === 'undefined') return true
+                return variant.attributes[key] === value
+            })
+        })
+    }
+
+    // Show a clear message when the product is missing or the API fails.
+    if (!loading && !product) {
+        return (
+            <div className="min-h-screen bg-[#0D0D0D] text-[#eae1d4] flex flex-col items-center justify-center px-6 text-center">
+                <h1 className="text-2xl font-semibold text-[#d4af37] mb-3">Product Not Found</h1>
+                <p className="text-sm text-[#8f8576] mb-6">
+                    We could not load this product. Please check the product link or try again.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => navigate(-1)}
+                    className="border border-[#d4af37] text-[#d4af37] px-5 py-3 rounded text-xs font-bold uppercase tracking-wider hover:bg-[#d4af37] hover:text-black transition-colors"
+                >
+                    Go Back
+                </button>
+            </div>
+        )
     }
 
     return (
@@ -199,9 +375,9 @@ const ProductDetail = () => {
                         {/* ── LEFT COLUMN: Image Gallery ── */}
                         <div className="lg:col-span-7 flex flex-col-reverse sm:flex-row gap-4 sm:gap-6">
                             {/* Thumbnails Sidebar */}
-                            {images.length > 1 && (
+                            {effectiveImages.length > 1 && (
                                 <div className="flex sm:flex-col gap-3 overflow-x-auto sm:overflow-y-auto max-h-[620px] pb-2 sm:pb-0 scrollbar-thin scrollbar-thumb-[#2a241b]">
-                                    {images.map((img, idx) => (
+                                    {effectiveImages.map((img, idx) => (
                                         <button
                                             key={img._id || idx}
                                             onClick={() => setActiveImageIdx(idx)}
@@ -251,14 +427,14 @@ const ProductDetail = () => {
                                     </div>
 
                                     {/* Counter Badge */}
-                                    {images.length > 0 && (
+                                    {effectiveImages.length > 0 && (
                                         <div className="absolute top-4 right-4 bg-[#0d0d0d]/80 backdrop-blur-md border border-[#d4af37]/30 text-[#d4af37] text-[10px] font-semibold tracking-widest px-2.5 py-1 rounded-sm">
-                                            {activeImageIdx + 1} / {images.length}
+                                            {activeImageIdx + 1} / {effectiveImages.length}
                                         </div>
                                     )}
 
                                     {/* Gallery Navigation Arrows */}
-                                    {images.length > 1 && (
+                                    {effectiveImages.length > 1 && (
                                         <>
                                             <button
                                                 onClick={handlePrevImage}
@@ -305,15 +481,26 @@ const ProductDetail = () => {
                                     {product?.title}
                                 </h1>
 
-                                {/* Price Box */}
+                                {/* Price & Stock Box */}
                                 <div className="p-4 rounded bg-[#131210] border border-[#231e18] mb-6 shadow-inner">
-                                    <div className="flex items-baseline gap-3">
-                                        <span className="font-['Playfair_Display',Georgia,serif] text-3xl sm:text-4xl font-bold text-[#d4af37]">
-                                            {formatPrice(product?.price?.amount, product?.price?.currency)}
-                                        </span>
-                                        <span className="text-xs text-[#8f8576] uppercase tracking-wider">
-                                            MRP incl. all taxes
-                                        </span>
+                                    <div className="flex items-baseline justify-between gap-3">
+                                        <div className="flex items-baseline gap-3">
+                                            {/* Uses variant price if available, else falls back to product price */}
+                                            <span className="font-['Playfair_Display',Georgia,serif] text-3xl sm:text-4xl font-bold text-[#d4af37]">
+                                                {formatPrice(effectivePrice?.amount, effectivePrice?.currency)}
+                                            </span>
+                                            <span className="text-xs text-[#8f8576] uppercase tracking-wider">
+                                                MRP incl. all taxes
+                                            </span>
+                                        </div>
+
+                                        {/* Stock Availability indicator with variant fallback */}
+                                        <div className="flex items-center gap-2">
+                                            <span className={`w-2 h-2 rounded-full ${effectiveStock > 0 ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.6)]' : 'bg-red-400'}`} />
+                                            <span className={`text-[11px] font-semibold uppercase tracking-wider ${effectiveStock > 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                                                {effectiveStock > 0 ? (effectiveStock <= 10 ? `Only ${effectiveStock} left` : 'In Stock') : 'Out of Stock'}
+                                            </span>
+                                        </div>
                                     </div>
                                     <p className="text-[11px] text-[#70685c] mt-1.5 flex items-center gap-1.5">
                                         <span className="text-[#d4af37]">✓</span>
@@ -331,57 +518,205 @@ const ProductDetail = () => {
                                     </p>
                                 </div>
 
-                                {/* Size Selection */}
-                                <div className="mb-6">
-                                    <div className="flex items-center justify-between mb-3">
-                                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8f8576]">
-                                            Select Size
-                                        </span>
-                                        <button
-                                            type="button"
-                                            onClick={() => setShowSizeGuide(!showSizeGuide)}
-                                            className="text-[11px] text-[#d4af37] underline underline-offset-4 hover:text-[#f7d56e] transition-colors cursor-pointer"
-                                        >
-                                            {showSizeGuide ? 'Hide Size Chart' : 'View Size Chart'}
-                                        </button>
-                                    </div>
-
-                                    <div className="grid grid-cols-5 gap-2.5">
-                                        {sizes.map((size) => (
-                                            <button
-                                                key={size}
-                                                type="button"
-                                                onClick={() => setSelectedSize(size)}
-                                                className={`py-3 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 cursor-pointer border ${
-                                                    selectedSize === size
-                                                        ? 'bg-[#d4af37] text-black border-[#d4af37] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)]'
-                                                        : 'bg-[#151310] text-[#eae1d4] border-[#29231b] hover:border-[#d4af37]/60 hover:bg-[#1a1714]'
-                                                }`}
-                                            >
-                                                {size}
-                                            </button>
-                                        ))}
-                                    </div>
-
-                                    {/* Expandable Size Guide */}
-                                    {showSizeGuide && (
-                                        <div className="mt-4 p-4 rounded bg-[#14120f] border border-[#2b251b] text-xs animate-fadeIn">
-                                            <div className="font-semibold text-[#d4af37] uppercase tracking-wider mb-2">
-                                                Measurement Guidelines (Inches)
-                                            </div>
-                                            <div className="grid grid-cols-4 gap-2 text-center text-[#8f8576] pt-1">
-                                                <div className="font-bold text-[#eae1d4]">Size</div>
-                                                <div className="font-bold text-[#eae1d4]">Waist</div>
-                                                <div className="font-bold text-[#eae1d4]">Length</div>
-                                                <div className="font-bold text-[#eae1d4]">Hip</div>
-                                                <div>S</div><div>30"</div><div>40"</div><div>38"</div>
-                                                <div>M</div><div>32"</div><div>41"</div><div>40"</div>
-                                                <div>L</div><div>34"</div><div>42"</div><div>42"</div>
-                                                <div>XL</div><div>36"</div><div>42.5"</div><div>44"</div>
-                                            </div>
+                                {/* ── DYNAMIC VARIANT SELECTOR (Direct Variant Chips) ── */}
+                                {variants.length > 0 && (
+                                    <div className="mb-6 border-t border-[#201c17] pt-5">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8f8576]">
+                                                Choose Variant ({variants.length} Available)
+                                            </span>
+                                            {activeVariant && (
+                                                <span className="text-[11px] text-[#d4af37] font-mono">
+                                                    {Object.entries(activeVariant.attributes || {}).map(([k, v]) => `${k}: ${v}`).join(' • ')}
+                                                </span>
+                                            )}
                                         </div>
-                                    )}
-                                </div>
+
+                                        <div className="grid grid-cols-3 sm:grid-cols-3 gap-2.5">
+                                            {variants.map((v) => {
+                                                const isSelected = selectedVariantId === v._id;
+                                                const vPrice = v.price?.amount ? v.price : product?.price;
+                                                const vThumbnail = (v.images && v.images[0]?.url) || (product?.images && product.images[0]?.url);
+                                                // Show only non-size attributes in the variant card.
+                                                // Size is displayed separately in the Size selector below.
+                                                const attrLabels = Object.entries(v.attributes || {})
+                                                    .filter(([key]) => key.toLowerCase() !== 'size')
+                                                    .map(([, val]) => val)
+                                                    .join(' / ') || 'Standard';
+
+                                                return (
+                                                    <button
+                                                        key={v._id}
+                                                        type="button"
+                                                        onClick={() => handleSelectVariantDirectly(v)}
+                                                        className={`p-2.5 rounded text-left transition-all duration-200 border cursor-pointer flex items-center gap-3 ${
+                                                            isSelected
+                                                                ? 'bg-[#1c1811] border-[#d4af37] ring-1 ring-[#d4af37]/60 shadow-[0_0_12px_rgba(212,175,55,0.2)]'
+                                                                : 'bg-[#14120f] border-[#262017] hover:border-[#42392b]'
+                                                        }`}
+                                                    >
+                                                        {vThumbnail ? (
+                                                            <img
+                                                                src={vThumbnail}
+                                                                alt={attrLabels}
+                                                                className="w-10 h-10 object-cover rounded-sm border border-[#2d251a]"
+                                                            />
+                                                        ) : (
+                                                            <div className="w-10 h-10 bg-[#1c1811] rounded-sm flex items-center justify-center text-xs text-[#8f8576]">
+                                                                ✨
+                                                            </div>
+                                                        )}
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className={`text-xs font-semibold truncate capitalize ${isSelected ? 'text-[#d4af37]' : 'text-[#eae1d4]'}`}>
+                                                                {attrLabels}
+                                                            </div>
+                                                            <div className="text-[10px] text-[#8f8576] font-mono mt-0.5">
+                                                                {formatPrice(vPrice?.amount, vPrice?.currency)}
+                                                            </div>
+                                                        </div>
+                                                    </button>
+                                                );
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* ── DYNAMIC ATTRIBUTE SELECTORS (e.g. Color, Size, etc.) ── */}
+                                {allAttributeNames.length > 0 ? (
+                                    allAttributeNames.map((attrName) => {
+                                        const options = attributeOptions[attrName] || [];
+                                        const currentVal = selectedAttributes[attrName] || (activeVariant?.attributes?.[attrName] ?? '');
+
+                                        return (
+                                            <div key={attrName} className="mb-6">
+                                                <div className="flex items-center justify-between mb-3">
+                                                    <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8f8576]">
+                                                        Select {attrName}: <span className="text-[#eae1d4] ml-1 capitalize">{currentVal || 'Default'}</span>
+                                                    </span>
+                                                    {attrName.toLowerCase() === 'size' && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowSizeGuide(!showSizeGuide)}
+                                                            className="text-[11px] text-[#d4af37] underline underline-offset-4 hover:text-[#f7d56e] transition-colors cursor-pointer"
+                                                        >
+                                                            {showSizeGuide ? 'Hide Size Chart' : 'View Size Chart'}
+                                                        </button>
+                                                    )}
+                                                </div>
+
+                                                <div className="flex flex-wrap gap-2.5">
+                                                    {options.map((optVal) => {
+                                                        // Check availability using the selected color/size/etc.
+                                                        const isAvailable = isAttributeOptionAvailable(attrName, optVal)
+
+                                                        const isSelected = (selectedAttributes[attrName] === optVal) ||
+                                                            (!selectedAttributes[attrName] && activeVariant?.attributes?.[attrName] === optVal)
+
+                                                        return (
+                                                            <button
+                                                                key={optVal}
+                                                                type="button"
+                                                                disabled={!isAvailable}
+                                                                onClick={() => {
+                                                                    // Do not allow unavailable options to be selected.
+                                                                    if (isAvailable) {
+                                                                        handleSelectAttributeValue(attrName, optVal)
+                                                                    }
+                                                                }}
+                                                                className={`relative py-2 px-4 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 border ${
+                                                                    !isAvailable
+                                                                        ? 'bg-[#11100e] text-[#625b50] border-[#29231b] cursor-not-allowed'
+                                                                        : isSelected
+                                                                            ? 'bg-[#d4af37] text-black border-[#d4af37] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)] cursor-pointer'
+                                                                            : 'bg-[#151310] text-[#eae1d4] border-[#29231b] hover:border-[#d4af37]/60 hover:bg-[#1a1714] cursor-pointer'
+                                                                }`}
+                                                            >
+                                                                {optVal}
+
+                                                                {/* Diagonal line means this option is unavailable. */}
+                                                                {!isAvailable && (
+                                                                    <span className="pointer-events-none absolute inset-0 flex items-center justify-center overflow-hidden rounded">
+                                                                        <span className="w-[130%] h-px bg-[#8f8576] rotate-[-25deg]" />
+                                                                    </span>
+                                                                )}
+                                                            </button>
+                                                        )
+                                                    })}
+                                                </div>
+
+                                                {/* Size Guide Chart if size attribute */}
+                                                {attrName.toLowerCase() === 'size' && showSizeGuide && (
+                                                    <div className="mt-4 p-4 rounded bg-[#14120f] border border-[#2b251b] text-xs animate-fadeIn">
+                                                        <div className="font-semibold text-[#d4af37] uppercase tracking-wider mb-2">
+                                                            Measurement Guidelines (Inches)
+                                                        </div>
+                                                        <div className="grid grid-cols-4 gap-2 text-center text-[#8f8576] pt-1">
+                                                            <div className="font-bold text-[#eae1d4]">Size</div>
+                                                            <div className="font-bold text-[#eae1d4]">Waist</div>
+                                                            <div className="font-bold text-[#eae1d4]">Length</div>
+                                                            <div className="font-bold text-[#eae1d4]">Hip</div>
+                                                            <div>S</div><div>30"</div><div>40"</div><div>38"</div>
+                                                            <div>M</div><div>32"</div><div>41"</div><div>40"</div>
+                                                            <div>L</div><div>34"</div><div>42"</div><div>42"</div>
+                                                            <div>XL</div><div>36"</div><div>42.5"</div><div>44"</div>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })
+                                ) : (
+                                    /* Fallback Standard Size Selector when no custom attributes exist on variants */
+                                    <div className="mb-6">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8f8576]">
+                                                Select Size: <span className="text-[#eae1d4] ml-1">{fallbackSize}</span>
+                                            </span>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowSizeGuide(!showSizeGuide)}
+                                                className="text-[11px] text-[#d4af37] underline underline-offset-4 hover:text-[#f7d56e] transition-colors cursor-pointer"
+                                            >
+                                                {showSizeGuide ? 'Hide Size Chart' : 'View Size Chart'}
+                                            </button>
+                                        </div>
+
+                                        <div className="grid grid-cols-5 gap-2.5">
+                                            {defaultSizes.map((size) => (
+                                                <button
+                                                    key={size}
+                                                    type="button"
+                                                    onClick={() => setFallbackSize(size)}
+                                                    className={`py-3 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 cursor-pointer border ${
+                                                        fallbackSize === size
+                                                            ? 'bg-[#d4af37] text-black border-[#d4af37] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)]'
+                                                            : 'bg-[#151310] text-[#eae1d4] border-[#29231b] hover:border-[#d4af37]/60 hover:bg-[#1a1714]'
+                                                    }`}
+                                                >
+                                                    {size}
+                                                </button>
+                                            ))}
+                                        </div>
+
+                                        {showSizeGuide && (
+                                            <div className="mt-4 p-4 rounded bg-[#14120f] border border-[#2b251b] text-xs animate-fadeIn">
+                                                <div className="font-semibold text-[#d4af37] uppercase tracking-wider mb-2">
+                                                    Measurement Guidelines (Inches)
+                                                </div>
+                                                <div className="grid grid-cols-4 gap-2 text-center text-[#8f8576] pt-1">
+                                                    <div className="font-bold text-[#eae1d4]">Size</div>
+                                                    <div className="font-bold text-[#eae1d4]">Waist</div>
+                                                    <div className="font-bold text-[#eae1d4]">Length</div>
+                                                    <div className="font-bold text-[#eae1d4]">Hip</div>
+                                                    <div>S</div><div>30"</div><div>40"</div><div>38"</div>
+                                                    <div>M</div><div>32"</div><div>41"</div><div>40"</div>
+                                                    <div>L</div><div>34"</div><div>42"</div><div>42"</div>
+                                                    <div>XL</div><div>36"</div><div>42.5"</div><div>44"</div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
 
                                 {/* Quantity Selector */}
                                 <div className="mb-8 flex items-center gap-4">
@@ -401,7 +736,7 @@ const ProductDetail = () => {
                                         </span>
                                         <button
                                             type="button"
-                                            onClick={() => setQuantity(q => q + 1)}
+                                            onClick={() => setQuantity(q => Math.min(effectiveStock, q + 1))}
                                             className="px-3.5 py-2 text-sm text-[#8f8576] hover:text-[#d4af37] hover:bg-[#1a1714] transition-colors cursor-pointer"
                                         >
                                             +
@@ -414,20 +749,27 @@ const ProductDetail = () => {
                                     {/* ADD TO CART Button */}
                                     <button
                                         type="button"
-                                        onClick={() => showNotification(`Added ${quantity} item(s) to Bag`)}
-                                        className="flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98]"
+                                        disabled={effectiveStock <= 0}
+                                        onClick={() => {
+                                            const variantLabel = activeVariant?.attributes
+                                                ? Object.entries(activeVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
+                                                : `Size: ${fallbackSize}`;
+                                            showNotification(`Added ${quantity} item(s) (${variantLabel}) to Bag`);
+                                        }}
+                                        className={`flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98] ${effectiveStock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <svg className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                                         </svg>
-                                        <span>Add To Cart</span>
+                                        <span>{effectiveStock > 0 ? 'Add To Cart' : 'Out of Stock'}</span>
                                     </button>
 
                                     {/* BUY NOW Button */}
                                     <button
                                         type="button"
+                                        disabled={effectiveStock <= 0}
                                         onClick={() => showNotification("Proceeding to Express Checkout...")}
-                                        className="flex-1 group relative overflow-hidden rounded bg-gradient-to-r from-[#d4af37] via-[#f7d56e] to-[#d4af37] text-black py-4 px-6 text-xs font-extrabold uppercase tracking-[0.22em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_6px_30px_rgba(212,175,55,0.55)] hover:brightness-105 active:scale-[0.98]"
+                                        className={`flex-1 group relative overflow-hidden rounded bg-gradient-to-r from-[#d4af37] via-[#f7d56e] to-[#d4af37] text-black py-4 px-6 text-xs font-extrabold uppercase tracking-[0.22em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-[0_4px_25px_rgba(212,175,55,0.35)] hover:shadow-[0_6px_30px_rgba(212,175,55,0.55)] hover:brightness-105 active:scale-[0.98] ${effectiveStock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
                                     >
                                         <svg className="w-4 h-4 transition-transform group-hover:scale-110" fill="currentColor" viewBox="0 0 24 24">
                                             <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" />
@@ -493,4 +835,4 @@ const ProductDetail = () => {
     )
 }
 
-export default ProductDetail
+export default ProductDetail
