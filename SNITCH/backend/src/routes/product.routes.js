@@ -4,6 +4,7 @@ import {createProduct} from "../controllers/product.controller.js";
 import multer from "multer";
 import {createProductValidator} from "../validator/product.validator.js";
 import {getSellerProducts,getAllProducts,getProductDetails} from "../controllers/product.controller.js";
+import {addProductVariant} from "../controllers/product.controller.js";
 
 const upload = multer({
     storage:multer.memoryStorage(),
@@ -21,6 +22,8 @@ router.get("/seller",authenticateSeller,getSellerProducts);
 router.get("/",getAllProducts)
 
 router.get("/detail/:id", getProductDetails);
+
+router.post("/:productId/variants", authenticateSeller, upload.array('images',7),addProductVariant )
 
 export default router;
 
