@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link, useNavigate } from 'react-router'
 import { useProduct } from '../hooks/useProduct'
+import { useCart } from '../../cart/hook/useCart'
+
 
 const formatPrice = (amount, currency = 'INR') => {
     return new Intl.NumberFormat('en-IN', {
@@ -14,6 +16,7 @@ const ProductDetail = () => {
     const { productId } = useParams()
     const navigate = useNavigate()
     const { handleGetProductById } = useProduct()
+    const {handleAddItem} = useCart()
 
     // ── Main State ──
     const [product, setProduct] = useState(null)
@@ -747,22 +750,42 @@ const ProductDetail = () => {
                                 {/* ── THE TWO MANDATORY BUTTONS ── */}
                                 <div className="flex flex-col sm:flex-row gap-3.5 mb-8">
                                     {/* ADD TO CART Button */}
-                                    <button
-                                        type="button"
-                                        disabled={effectiveStock <= 0}
-                                        onClick={() => {
-                                            const variantLabel = activeVariant?.attributes
-                                                ? Object.entries(activeVariant.attributes).map(([k, v]) => `${k}: ${v}`).join(', ')
-                                                : `Size: ${fallbackSize}`;
-                                            showNotification(`Added ${quantity} item(s) (${variantLabel}) to Bag`);
-                                        }}
-                                        className={`flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98] ${effectiveStock <= 0 ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                    >
-                                        <svg className="w-4 h-4 transition-transform group-hover:-translate-y-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                        </svg>
-                                        <span>{effectiveStock > 0 ? 'Add To Cart' : 'Out of Stock'}</span>
-                                    </button>
+<button
+    type="button"
+    disabled={effectiveStock <= 0}
+    onClick={()=>{
+        handleAddItem({
+            productId:product._id,
+            variantId:activeVariant._id
+        })
+    }
+
+    }
+    className={`flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98] ${
+        effectiveStock <= 0
+            ? "opacity-50 cursor-not-allowed"
+            : ""
+    }`}
+>
+    <svg
+        className="w-4 h-4 transition-transform group-hover:-translate-y-0.5"
+        fill="none"
+        stroke="currentColor"
+        viewBox="0 0 24 24"
+    >
+        <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+        />
+    </svg>
+
+    <span>
+        {effectiveStock > 0 ? "Add To Cart" : "Out of Stock"}
+    </span>
+</button>
+                                    
 
                                     {/* BUY NOW Button */}
                                     <button
