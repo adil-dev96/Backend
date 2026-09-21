@@ -314,33 +314,7 @@ const ProductDetail = () => {
             </div>
 
             {/* ── Navigation Header ── */}
-            <header className="sticky top-0 z-40 bg-[#0D0D0D]/95 backdrop-blur-md border-b border-[#201c17]">
-                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-18 flex items-center justify-between">
-                    {/* Brand Logo */}
-                    <div className="flex items-center gap-8">
-                        <Link to="/" className="group flex items-center">
-                            <span className="font-['Playfair_Display',Georgia,serif] text-2xl font-bold tracking-[0.25em] bg-gradient-to-r from-[#f7d56e] via-[#d4af37] to-[#9c7a1a] bg-clip-text text-transparent group-hover:brightness-110 transition-all">
-                                SNITCH
-                            </span>
-                        </Link>
-                        <span className="hidden md:inline-block h-4 w-px bg-[#2a241c]"></span>
-                        <nav className="hidden md:flex items-center gap-6 text-[11px] font-semibold tracking-[0.16em] uppercase text-[#8f8576]">
-                            <Link to="/" className="hover:text-[#d4af37] transition-colors">Catalog</Link>
-                            <span className="text-[#3a342c]">/</span>
-                            <span className="text-[#d4af37]">Product Details</span>
-                        </nav>
-                    </div>
-
-                    {/* Quick Action / Back Button */}
-                    <button
-                        onClick={() => navigate(-1)}
-                        className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.15em] text-[#b0a696] hover:text-[#d4af37] transition-colors py-2 px-3 rounded hover:bg-[#161411] border border-transparent hover:border-[#2b251a]"
-                    >
-                        <span>←</span>
-                        <span>Back</span>
-                    </button>
-                </div>
-            </header>
+            
 
             {/* ── Main Container ── */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
