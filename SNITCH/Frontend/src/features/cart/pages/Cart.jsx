@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 
 const Cart = () => {
   const cartItems = useSelector(state => state.cart.items)
-  const { handleGetCart } = useCart()
+  const { handleGetCart, handleIncrementCartItem } = useCart()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -48,14 +48,14 @@ const Cart = () => {
     
 
       {/* ── Main Content ── */}
-      <main style={{ flexGrow: 1, paddingTop: 112, paddingBottom: 80, maxWidth: 1440, margin: '0 auto', width: '100%', padding: '112px 64px 80px' }}>
+      <main className="main-content" style={{ flexGrow: 1, maxWidth: 1440, margin: '0 auto', width: '100%' }}>
 
         {/* Page Header */}
         <div style={{ textAlign: 'center', padding: '40px 0 56px', maxWidth: 640, margin: '0 auto', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
           <span style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f2ca50', marginBottom: 12 }}>
             ATELIER PRIVATE DISPATCH
           </span>
-          <h1 style={{ fontFamily: 'Playfair Display, serif', fontSize: 64, fontWeight: 700, letterSpacing: '-0.02em', color: '#eae1d4', textTransform: 'uppercase', lineHeight: '72px', margin: 0 }}>
+          <h1 className="page-title" style={{ fontFamily: 'Playfair Display, serif', fontSize: 64, fontWeight: 700, letterSpacing: '-0.02em', color: '#eae1d4', textTransform: 'uppercase', lineHeight: '72px', margin: 0 }}>
             YOUR BAG
           </h1>
           <div style={{ width: 64, height: 1, backgroundColor: '#d4af37', margin: '16px 0' }} />
@@ -88,6 +88,28 @@ const Cart = () => {
             className="cart-grid"
           >
             <style>{`
+              .cart-grid { display: grid; grid-template-columns: 1fr; gap: 32px; }
+              .cart-item { display: flex; gap: 24px; flex-wrap: wrap; }
+              .cart-item-content { flex: 1; min-width: 220px; }
+              .benefits-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+              .recommendations-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 32px; }
+              .main-content { padding: 112px 64px 80px !important; }
+              @media (min-width: 1024px) { .cart-grid { grid-template-columns: 7fr 5fr !important; gap: 48px; } .order-summary { position: sticky; top: 112px; align-self: start; } }
+              @media (max-width: 767px) {
+                .main-content { padding: 88px 16px 48px !important; }
+                .page-title { font-size: 38px !important; line-height: 46px !important; }
+                .cart-item { padding: 16px !important; gap: 16px !important; }
+                .cart-item-image { width: 100px !important; height: 125px !important; }
+                .cart-item-content { width: 100%; min-width: 0; }
+                .cart-item-content h2 { font-size: 20px !important; line-height: 28px !important; overflow-wrap: anywhere; }
+                .cart-item-content p { font-size: 12px !important; overflow-wrap: anywhere; }
+                .benefits-grid, .recommendations-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+                .order-summary { position: static !important; }
+                .order-summary-box { padding: 20px !important; }
+                .footer-inner { padding: 32px 16px !important; justify-content: center !important; text-align: center; }
+              }
+              @media (min-width: 768px) and (max-width: 1023px) { .main-content { padding: 100px 32px 60px !important; } .recommendations-grid { grid-template-columns: repeat(2, 1fr) !important; } }
+
               @media (min-width: 1024px) {
                 .cart-grid { grid-template-columns: 7fr 5fr !important; }
               }
@@ -108,9 +130,7 @@ const Cart = () => {
                 <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#d0c5af' }}>
                   SELECTED ARCHIVAL PIECES ({cartItems.length} ITEM{cartItems.length > 1 ? 'S' : ''} / {totalQuantity} UNITS)
                 </span>
-                <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', color: '#99907c', textTransform: 'uppercase' }}>
-                  RESERVED (15:00)
-                </span>
+                
               </div>
 
               {/* Cart Items */}
@@ -123,6 +143,7 @@ const Cart = () => {
                   return (
                     <article
                       key={item._id}
+                      className="cart-item"
                       style={{
                         background: '#110e07', padding: 24,
                         border: '1px solid rgba(77,70,53,0.3)',
@@ -130,7 +151,7 @@ const Cart = () => {
                       }}
                     >
                       {/* Product thumbnail */}
-                      <div style={{
+                      <div className="cart-item-image" style={{
                         width: 160, height: 160, flexShrink: 0,
                         background: '#231f17', border: '1px solid rgba(77,70,53,0.4)',
                         overflow: 'hidden'
@@ -150,7 +171,7 @@ const Cart = () => {
                       </div>
 
                       {/* Details */}
-                      <div style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                      <div className="cart-item-content" style={{ flexGrow: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                         <div>
                           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                             <div>
@@ -209,6 +230,7 @@ const Cart = () => {
                                 {item.quantity}
                               </span>
                               <button
+                                onClick={() => handleIncrementCartItem({ productId: item.product._id, variantId: item.variant })}  
                                 aria-label="Increase quantity"
                                 className="qty-btn"
                                 type="button"
@@ -234,7 +256,7 @@ const Cart = () => {
               </div>
 
               {/* Atelier Value Propositions */}
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, paddingTop: 24, borderTop: '1px solid rgba(77,70,53,0.3)', marginTop: 24 }}>
+              <div className="benefits-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 16, paddingTop: 24, borderTop: '1px solid rgba(77,70,53,0.3)', marginTop: 24 }}>
                 {[
                   { icon: 'local_shipping', label: 'Complimentary Insured Transit' },
                   { icon: 'inventory_2', label: 'Signature Archival Packaging' },
@@ -253,8 +275,8 @@ const Cart = () => {
             </section>
 
             {/* RIGHT — Order Summary */}
-            <aside style={{ position: 'sticky', top: 112, alignSelf: 'start' }}>
-              <div style={{ background: '#1f1b13', padding: 32, border: '1px solid rgba(212,175,55,0.3)' }}>
+            <aside className="order-summary" style={{ position: 'sticky', top: 112, alignSelf: 'start' }}>
+              <div className="order-summary-box" style={{ background: '#1f1b13', padding: 32, border: '1px solid rgba(212,175,55,0.3)' }}>
                 {/* Title */}
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingBottom: 20, borderBottom: '1px solid rgba(77,70,53,0.3)' }}>
                   <h2 style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#f2ca50', margin: 0 }}>
@@ -366,7 +388,7 @@ const Cart = () => {
             <div style={{ width: 48, height: 1, background: '#d4af37', margin: '12px auto 0' }} />
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 32 }}>
+          <div className="recommendations-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: 32 }}>
             {[
               {
                 label: 'NOIR OBSCUR', title: 'Aurum Obscura Wool Overcoat', price: '₹24,500', badge: 'NEW ARCHIVE',
@@ -426,7 +448,7 @@ const Cart = () => {
 
       {/* ── Footer ── */}
       <footer style={{ background: '#110e07', borderTop: '1px solid rgba(77,70,53,0.3)' }}>
-        <div style={{ maxWidth: 1440, margin: '0 auto', padding: '48px 64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
+        <div className="footer-inner" style={{ maxWidth: 1440, margin: '0 auto', padding: '48px 64px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 24 }}>
           <div style={{ fontFamily: 'Inter, sans-serif', fontSize: 12, fontWeight: 600, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#d0c5af' }}>
             © 2024 SNITCH ATELIER. ALL RIGHTS RESERVED.
           </div>
