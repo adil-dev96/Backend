@@ -6,9 +6,9 @@ const cartApiInstance = axios.create({
 })
 
 export const addItem = async ({ productId, variantId,quantity }) => {
-    const response = await cartApiInstance.post(`/add/${productId}/${variantId}`, {
-        quantity:quantity
-    })
+    const url = variantId ? `/add/${productId}/${variantId}`: `/add/${productId}`
+
+    const response = await cartApiInstance.post(url,{quantity:quantity})
     return response.data
 }
 
@@ -18,12 +18,15 @@ export const getCart = async () => {
 }
 
 export const incrementCartItemApi = async ({ productId, variantId }) => {
-    const response = await cartApiInstance.patch(`/quantity/increment/${productId}/${variantId}`)
+    const url = variantId ? `/quantity/increment/${productId}/${variantId}`:`/quantity/increment/${productId}`;
+    const response = await cartApiInstance.patch(url);
     return response.data
 }
 
 export const decrementCartItemApi = async ({ productId, variantId }) => {
-    const response = await cartApiInstance.patch(`/quantity/decrement/${productId}/${variantId}`)
+    const url = variantId ? `/quantity/decrement/${productId}/${variantId}`:`/quantity/decrement/${productId}`;
+
+    const response = await cartApiInstance.patch(url);
     return response.data
 }
 

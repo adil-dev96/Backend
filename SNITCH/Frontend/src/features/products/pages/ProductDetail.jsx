@@ -16,7 +16,7 @@ const ProductDetail = () => {
     const { productId } = useParams()
     const navigate = useNavigate()
     const { handleGetProductById } = useProduct()
-    const {handleAddItem} = useCart()
+    const { handleAddItem } = useCart()
 
     // ── Main State ──
     const [product, setProduct] = useState(null)
@@ -314,7 +314,7 @@ const ProductDetail = () => {
             </div>
 
             {/* ── Navigation Header ── */}
-            
+
 
             {/* ── Main Container ── */}
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
@@ -358,11 +358,10 @@ const ProductDetail = () => {
                                         <button
                                             key={img._id || idx}
                                             onClick={() => setActiveImageIdx(idx)}
-                                            className={`relative flex-shrink-0 w-16 sm:w-20 aspect-[3/4] rounded overflow-hidden border transition-all duration-200 cursor-pointer ${
-                                                activeImageIdx === idx
+                                            className={`relative flex-shrink-0 w-16 sm:w-20 aspect-[3/4] rounded overflow-hidden border transition-all duration-200 cursor-pointer ${activeImageIdx === idx
                                                     ? 'border-[#d4af37] ring-1 ring-[#d4af37]/60 shadow-[0_0_12px_rgba(212,175,55,0.25)]'
                                                     : 'border-[#221e1a] opacity-60 hover:opacity-100 hover:border-[#3a342c]'
-                                            }`}
+                                                }`}
                                         >
                                             <img
                                                 src={img.url}
@@ -382,9 +381,8 @@ const ProductDetail = () => {
                                         <img
                                             src={currentImage}
                                             alt={product?.title || "Product image"}
-                                            className={`w-full h-full object-cover transition-transform duration-700 ease-out cursor-zoom-in ${
-                                                isImageZoomed ? 'scale-125' : 'group-hover:scale-105'
-                                            }`}
+                                            className={`w-full h-full object-cover transition-transform duration-700 ease-out cursor-zoom-in ${isImageZoomed ? 'scale-125' : 'group-hover:scale-105'
+                                                }`}
                                             onClick={() => setIsImageZoomed(!isImageZoomed)}
                                         />
                                     ) : (
@@ -526,11 +524,10 @@ const ProductDetail = () => {
                                                         key={v._id}
                                                         type="button"
                                                         onClick={() => handleSelectVariantDirectly(v)}
-                                                        className={`p-2.5 rounded text-left transition-all duration-200 border cursor-pointer flex items-center gap-3 ${
-                                                            isSelected
+                                                        className={`p-2.5 rounded text-left transition-all duration-200 border cursor-pointer flex items-center gap-3 ${isSelected
                                                                 ? 'bg-[#1c1811] border-[#d4af37] ring-1 ring-[#d4af37]/60 shadow-[0_0_12px_rgba(212,175,55,0.2)]'
                                                                 : 'bg-[#14120f] border-[#262017] hover:border-[#42392b]'
-                                                        }`}
+                                                            }`}
                                                     >
                                                         {vThumbnail ? (
                                                             <img
@@ -600,13 +597,12 @@ const ProductDetail = () => {
                                                                         handleSelectAttributeValue(attrName, optVal)
                                                                     }
                                                                 }}
-                                                                className={`relative py-2 px-4 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 border ${
-                                                                    !isAvailable
+                                                                className={`relative py-2 px-4 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 border ${!isAvailable
                                                                         ? 'bg-[#11100e] text-[#625b50] border-[#29231b] cursor-not-allowed'
                                                                         : isSelected
                                                                             ? 'bg-[#d4af37] text-black border-[#d4af37] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)] cursor-pointer'
                                                                             : 'bg-[#151310] text-[#eae1d4] border-[#29231b] hover:border-[#d4af37]/60 hover:bg-[#1a1714] cursor-pointer'
-                                                                }`}
+                                                                    }`}
                                                             >
                                                                 {optVal}
 
@@ -664,11 +660,10 @@ const ProductDetail = () => {
                                                     key={size}
                                                     type="button"
                                                     onClick={() => setFallbackSize(size)}
-                                                    className={`py-3 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 cursor-pointer border ${
-                                                        fallbackSize === size
+                                                    className={`py-3 text-xs font-semibold uppercase tracking-wider rounded transition-all duration-200 cursor-pointer border ${fallbackSize === size
                                                             ? 'bg-[#d4af37] text-black border-[#d4af37] font-bold shadow-[0_0_15px_rgba(212,175,55,0.3)]'
                                                             : 'bg-[#151310] text-[#eae1d4] border-[#29231b] hover:border-[#d4af37]/60 hover:bg-[#1a1714]'
-                                                    }`}
+                                                        }`}
                                                 >
                                                     {size}
                                                 </button>
@@ -724,43 +719,42 @@ const ProductDetail = () => {
                                 {/* ── THE TWO MANDATORY BUTTONS ── */}
                                 <div className="flex flex-col sm:flex-row gap-3.5 mb-8">
                                     {/* ADD TO CART Button */}
-<button
-    type="button"
-    disabled={effectiveStock <= 0}
-    onClick={()=>{
-        handleAddItem({
-            productId:product._id,
-            variantId:activeVariant._id,
-            quantity:quantity
-        })
-    }
+                                    <button
+                                        type="button"
+                                        disabled={effectiveStock <= 0}
+                                        onClick={() => {
+                                            handleAddItem({
+                                                productId: product._id,
+                                                variantId: activeVariant?._id || null,
+                                                quantity: quantity
+                                            })
+                                        }
 
-    }
-    className={`flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98] ${
-        effectiveStock <= 0
-            ? "opacity-50 cursor-not-allowed"
-            : ""
-    }`}
->
-    <svg
-        className="w-4 h-4 transition-transform group-hover:-translate-y-0.5"
-        fill="none"
-        stroke="currentColor"
-        viewBox="0 0 24 24"
-    >
-        <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth="2"
-            d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
-        />
-    </svg>
+                                        }
+                                        className={`flex-1 group relative overflow-hidden rounded bg-transparent border-2 border-[#d4af37] text-[#d4af37] hover:bg-[#d4af37]/10 py-4 px-6 text-xs font-bold uppercase tracking-[0.2em] transition-all duration-300 flex items-center justify-center gap-2 cursor-pointer shadow-lg hover:shadow-[0_0_20px_rgba(212,175,55,0.2)] active:scale-[0.98] ${effectiveStock <= 0
+                                                ? "opacity-50 cursor-not-allowed"
+                                                : ""
+                                            }`}
+                                    >
+                                        <svg
+                                            className="w-4 h-4 transition-transform group-hover:-translate-y-0.5"
+                                            fill="none"
+                                            stroke="currentColor"
+                                            viewBox="0 0 24 24"
+                                        >
+                                            <path
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                                strokeWidth="2"
+                                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"
+                                            />
+                                        </svg>
 
-    <span>
-        {effectiveStock > 0 ? "Add To Cart" : "Out of Stock"}
-    </span>
-</button>
-                                    
+                                        <span>
+                                            {effectiveStock > 0 ? "Add To Cart" : "Out of Stock"}
+                                        </span>
+                                    </button>
+
 
                                     {/* BUY NOW Button */}
                                     <button
