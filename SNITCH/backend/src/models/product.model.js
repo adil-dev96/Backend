@@ -20,6 +20,11 @@ const productSchema = new mongoose.Schema(
       type: priceSchema,
       required: true,
     },
+    stock:{
+      type:Number,
+      default:10,
+      min:0
+    },
 
     images: [
       {
@@ -41,7 +46,8 @@ const productSchema = new mongoose.Schema(
         ],
          stock:{
           type:Number,
-          default:0
+          default:0,
+          
         
       },
       attributes:{

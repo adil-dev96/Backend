@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 
 const Cart = () => {
   const cartItems = useSelector(state => state.cart.items)
-  const { handleGetCart, handleIncrementCartItem } = useCart()
+  const { handleGetCart, handleIncrementCartItem, handleDecrementCartItem } = useCart()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -219,6 +219,7 @@ const Cart = () => {
                             <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#99907c', fontFamily: 'Inter, sans-serif' }}>QTY</span>
                             <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid rgba(77,70,53,0.5)', background: '#231f17' }}>
                               <button
+                                onClick={()=>handleDecrementCartItem({productId:item.product._id, variantId: item.variant})}
                                 aria-label="Decrease quantity"
                                 className="qty-btn"
                                 type="button"
