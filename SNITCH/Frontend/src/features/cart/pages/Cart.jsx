@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router'
 
 const Cart = () => {
   const cartItems = useSelector(state => state.cart.items)
-  const { handleGetCart, handleIncrementCartItem, handleDecrementCartItem } = useCart()
+  const { handleGetCart, handleIncrementCartItem, handleDecrementCartItem, handleRemoveCartItem } = useCart()
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -45,7 +45,7 @@ const Cart = () => {
       style={{ backgroundColor: '#16130b', color: '#eae1d4', fontFamily: 'Inter, sans-serif' }}
     >
       {/* ── Navigation Bar ── */}
-    
+
 
       {/* ── Main Content ── */}
       <main className="main-content" style={{ flexGrow: 1, maxWidth: 1440, margin: '0 auto', width: '100%' }}>
@@ -130,7 +130,7 @@ const Cart = () => {
                 <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#d0c5af' }}>
                   SELECTED ARCHIVAL PIECES ({cartItems.length} ITEM{cartItems.length > 1 ? 'S' : ''} / {totalQuantity} UNITS)
                 </span>
-                
+
               </div>
 
               {/* Cart Items */}
@@ -184,6 +184,10 @@ const Cart = () => {
                             </div>
                             {/* Remove */}
                             <button
+                              onClick={() => handleRemoveCartItem({
+                                productId: item.product._id,
+                                variantId: item.variant
+                              })}
                               aria-label="Remove item"
                               className="remove-btn"
                               style={{ background: 'none', border: 'none', color: '#99907c', cursor: 'pointer', padding: 4, transition: 'color 200ms' }}
@@ -219,19 +223,37 @@ const Cart = () => {
                             <span style={{ fontSize: 12, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase', color: '#99907c', fontFamily: 'Inter, sans-serif' }}>QTY</span>
                             <div style={{ display: 'inline-flex', alignItems: 'center', border: '1px solid rgba(77,70,53,0.5)', background: '#231f17' }}>
                               <button
-                                onClick={()=>handleDecrementCartItem({productId:item.product._id, variantId: item.variant})}
+                                onClick={() => {
+                                  if (item.quantity === 1) {
+                                    handleRemoveCartItem({
+                                      productId: item.product._id,
+                                      variantId: item.variant,
+                                    });
+                                  } else {
+                                    handleDecrementCartItem({
+                                      productId: item.product._id,
+                                      variantId: item.variant
+                                    })
+                                  }
+                                }}
+
+
                                 aria-label="Decrease quantity"
                                 className="qty-btn"
                                 type="button"
                                 style={{ width: 32, height: 32, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'none', border: 'none', color: '#f2ca50', cursor: 'pointer', transition: 'background 200ms' }}
                               >
-                                <Minus size={16} strokeWidth={2} aria-hidden="true" />
+                                {item.quantity === 1 ? (
+                                  <Trash2 size={16} strokeWidth={2} aria-hidden="true" />
+                                ) : (
+                                  <Minus size={16} strokeWidth={2} aria-hidden="true" />
+                                )}
                               </button>
                               <span style={{ width: 40, textAlign: 'center', fontSize: 14, fontWeight: 600, color: '#eae1d4', fontFamily: 'Inter, sans-serif' }}>
                                 {item.quantity}
                               </span>
                               <button
-                                onClick={() => handleIncrementCartItem({ productId: item.product._id, variantId: item.variant })}  
+                                onClick={() => handleIncrementCartItem({ productId: item.product._id, variantId: item.variant })}
                                 aria-label="Increase quantity"
                                 className="qty-btn"
                                 type="button"
