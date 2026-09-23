@@ -1,5 +1,21 @@
 import React, { useEffect } from 'react'
-import { Search, UserRound, ShoppingBag, Trash2, Minus, Plus, Image as ImageIcon, ArrowRight, LockKeyhole, ShieldCheck, Truck, Package, Ruler } from 'lucide-react'
+import {
+  Search,
+  UserRound,
+  ShoppingBag,
+  Trash2,
+  Minus,
+  Plus,
+  Image as ImageIcon,
+  ArrowRight,
+  LockKeyhole,
+  ShieldCheck,
+  Truck,
+  Package,
+  Ruler,
+  CircleCheck,
+  CircleAlert
+} from 'lucide-react'
 import { useSelector } from 'react-redux'
 import { useCart } from '../hook/useCart'
 import { useNavigate } from 'react-router'
@@ -17,19 +33,24 @@ const Cart = () => {
   // This makes icons visible without requiring a font import in index.html.
 
   // Compute totals from cart items
-  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0)
-  const totalAmount = cartItems.reduce(
-    (sum, item) => sum +getCurrentPrice(item) * item.quantity,
-    0
-  )
-  const formatINR = (amount) =>
-    new Intl.NumberFormat('en-IN').format(amount)
-
   const getCurrentPrice = (item) => {
     const variant = item.product.variants?.find(v => String(v._id) === String(item.variant))
 
     return item.variant ? (variant?.price?.amount ?? item.product.price.amount) : item.product.price.amount
   }
+
+
+
+
+  const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0)
+  const totalAmount = cartItems.reduce(
+    (sum, item) => sum + getCurrentPrice(item) * item.quantity,
+    0
+  )
+  const formatINR = (amount) =>
+    new Intl.NumberFormat('en-IN').format(amount)
+
+
 
   // Helper: get variant image or fallback to product images
   const getVariantImage = (item) => {
@@ -145,7 +166,7 @@ const Cart = () => {
                   const variantImage = getVariantImage(item)
                   const variantColor = getVariantColor(item)
 
-                  const currentPrice =getCurrentPrice(item)
+                  const currentPrice = getCurrentPrice(item)
                   const oldPrice = item.price.amount
 
                   const lineTotal = currentPrice * item.quantity
@@ -286,7 +307,26 @@ const Cart = () => {
                           <div style={{ textAlign: 'right' }}>
                             <p style={{ fontFamily: 'Playfair Display, serif', fontSize: 24, fontWeight: 600, color: '#f2ca50', margin: 0 }}>
                               ₹{formatINR(lineTotal)}
+
                             </p>
+
+                            {totalSavings > 0 && (
+                              <p style={{ color: '#72c98b', fontSize: 12, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <CircleCheck size={14} strokeWidth={2} />
+                                Congrats! You save ₹{formatINR(totalSavings)} on this item.
+                              </p>
+                            )}
+
+                            {totalSavings < 0 && (
+                              <p style={{ color: '#e8a06a', fontSize: 12, marginTop: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                                <CircleAlert size={14} strokeWidth={2} />
+                                Price increased by ₹{formatINR(Math.abs(totalSavings))}.
+                              </p>
+                            )}
+
+
+
+
                           </div>
                         </div>
                       </div>
