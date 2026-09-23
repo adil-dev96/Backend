@@ -860,7 +860,7 @@ const Home = () => {
             </div>
 
             {/* ── LUXURY STICKY NAVBAR ── */}
-            
+
 
             {/* ── HERO EDITORIAL BANNER ── */}
             <section

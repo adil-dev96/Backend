@@ -19,11 +19,17 @@ const Cart = () => {
   // Compute totals from cart items
   const totalQuantity = cartItems.reduce((sum, item) => sum + item.quantity, 0)
   const totalAmount = cartItems.reduce(
-    (sum, item) => sum + item.price.amount * item.quantity,
+    (sum, item) => sum +getCurrentPrice(item) * item.quantity,
     0
   )
   const formatINR = (amount) =>
     new Intl.NumberFormat('en-IN').format(amount)
+
+  const getCurrentPrice = (item) => {
+    const variant = item.product.variants?.find(v => String(v._id) === String(item.variant))
+
+    return item.variant ? (variant?.price?.amount ?? item.product.price.amount) : item.product.price.amount
+  }
 
   // Helper: get variant image or fallback to product images
   const getVariantImage = (item) => {
@@ -138,7 +144,15 @@ const Cart = () => {
                 {cartItems.map((item) => {
                   const variantImage = getVariantImage(item)
                   const variantColor = getVariantColor(item)
-                  const lineTotal = item.price.amount * item.quantity
+
+                  const currentPrice =getCurrentPrice(item)
+                  const oldPrice = item.price.amount
+
+                  const lineTotal = currentPrice * item.quantity
+
+                  const priceDifference = oldPrice - currentPrice
+
+                  const totalSavings = priceDifference * item.quantity
 
                   return (
                     <article
@@ -214,7 +228,10 @@ const Cart = () => {
                             }}>
                               {item.price.currency}
                             </span>
+
+
                           </div>
+
                         </div>
 
                         {/* Pricing & Qty Controls */}
@@ -263,7 +280,7 @@ const Cart = () => {
                               </button>
                             </div>
                             <span style={{ fontSize: 13, color: 'rgba(208,197,175,0.7)', letterSpacing: '0.02em' }}>
-                              (₹{formatINR(item.price.amount)} each)
+                              (₹{formatINR(currentPrice)} each)
                             </span>
                           </div>
                           <div style={{ textAlign: 'right' }}>
